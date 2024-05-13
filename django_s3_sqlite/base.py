@@ -57,11 +57,11 @@ class DatabaseWrapper(DatabaseWrapper):
                     file_bytes = obj_bytes.read()
                     self.db_hash = _get_md5(file_bytes)
                     f.write(file_bytes)
-                    log.debug("Database downloaded from S3.")
+                    log.info("Database downloaded from S3.")
 
             except botocore.exceptions.ClientError as e:
                 if e.response["Error"]["Code"] == "304":
-                    log.debug(
+                    log.info(
                         "ETag matches md5 of local copy, using local copy of DB!",
                     )
                     self.db_hash = current_md5
@@ -83,7 +83,7 @@ class DatabaseWrapper(DatabaseWrapper):
 
         if self.db_hash is None:
             self.db_hash = _get_md5(_get_bytes(self.settings_dict["NAME"]))
-        log.debug("Local database is ready. md5:%s", self.db_hash)
+        log.info("Local database is ready. md5:%s", self.db_hash)
 
     def __init__(self, *args, **kwargs):
         super(DatabaseWrapper, self).__init__(*args, **kwargs)
@@ -114,9 +114,9 @@ class DatabaseWrapper(DatabaseWrapper):
         file_bytes = _get_bytes(self.settings_dict["NAME"])
         current_md5 = _get_md5(file_bytes)
         if self.db_hash == current_md5:
-            log.debug("Database unchanged, not saving to remote DB!")
+            log.info("Database unchanged, not saving to remote DB!")
             return
-        log.debug(
+        log.info(
             "Current md5:%s, Expected md5:%s. Database changed, pushing to S3.",
             current_md5,
             self.db_hash,
@@ -126,6 +126,6 @@ class DatabaseWrapper(DatabaseWrapper):
                 self.settings_dict["BUCKET"], self.settings_dict["REMOTE_NAME"],
             ).put(Body=file_bytes, ContentMD5=base64.b64encode(binascii.unhexlify(current_md5)).decode("utf-8"))
             self.db_hash = current_md5
-            log.debug("Saved to remote DB!")
+            log.info("Saved to remote DB!")
         except Exception as e:
             log.exception("An error occurred pushing the database to S3.")
